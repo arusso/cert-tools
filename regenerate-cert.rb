@@ -28,7 +28,7 @@ def parse_options(args)
       options.outputdir = o 
     end
 
-    opts.on("-p", "--port PORT", "Output Dir") do |p|
+    opts.on("-p", "--port PORT", "Remote Port") do |p|
       options.port = p 
     end
 
