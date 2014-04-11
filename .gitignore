@@ -1,3 +1,7 @@
 *.key
 *.csrh
 *.csr
+*.crt
+*.tgz
+*.swp
+*.int
