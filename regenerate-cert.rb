@@ -14,6 +14,7 @@ def parse_options(args)
   options.server = 'localhost'
   options.outputdir = Dir.pwd
   options.certname = 'unset'
+  options.port = '443'
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage: regenerate-cert.rb [options]"
@@ -27,6 +28,10 @@ def parse_options(args)
       options.outputdir = o 
     end
 
+    opts.on("-p", "--port PORT", "Output Dir") do |p|
+      options.port = p 
+    end
+
     opts.on("-n", "--certname CERTNAME", "Cert Name") { |n| options.certname = n }
   end
 
@@ -37,7 +42,7 @@ end
 
 options = parse_options(ARGV)
 
-https = Net::HTTP.new(options.server, '443')
+https = Net::HTTP.new(options.server, options.port)
 https.use_ssl = true
 https.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -46,8 +51,6 @@ https.verify_mode = OpenSSL::SSL::VERIFY_NONE
 https.start { |http| @certificate = https.peer_cert }
 
 options.certname = @certificate.subject.common_name if options.certname == 'unset'
-#puts @certificate.subject.common_name
-#puts @certificate.sans
 
 keyfile = "#{options.outputdir}/#{options.certname}.key"
 if File.exist?(keyfile)
