@@ -1,0 +1,10 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    openssl-extensions (1.2.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  openssl-extensions
