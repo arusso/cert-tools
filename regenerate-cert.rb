@@ -15,6 +15,10 @@ def parse_options(args)
   options.outputdir = Dir.pwd
   options.certname = 'unset'
   options.port = '443'
+  options.sans = true
+  options.sans_auto = true
+  options.sans_append = [ ]
+  options.sans_remove = [ ]
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage: regenerate-cert.rb [options]"
@@ -33,6 +37,29 @@ def parse_options(args)
     end
 
     opts.on("-n", "--certname CERTNAME", "Cert Name") { |n| options.certname = n }
+
+    opts.on("--no-sans", "SANS") { |sans| options.sans = false }
+
+    opts.on(
+      "--san SAN_NAME",
+      "Append an additional SAN Name"
+    ) {
+      |san| options.sans_append.push(san)
+    }
+
+    opts.on(
+      "--no-sans-auto",
+      "Do not automatically add SANS that exist on the current cert"
+    ) { |auto|
+      options.sans_auto = false
+    }
+
+    opts.on(
+      "--san-remove SAN_NAME",
+      "Remove a SAN from the certificate request. Only useful when --no-sans-auto is not specified"
+    ) { |remove|
+      options.sans_remove.push(remove)
+    }
   end
 
   opt_parser.parse!(args)
@@ -75,11 +102,19 @@ exts = [
   ["basicConstraints", "CA:FALSE", false],
   ["keyUsage", "Digital Signature, Non Repudiation, Key Encipherment",false],
 ]
-sans = [ ]
-@certificate.sans.each do |alt|
-  sans << "DNS:#{alt}"
+
+if options.sans
+  sans = [ ]
+  if options.sans_auto
+    @certificate.sans.each do |alt|
+      sans << "DNS:#{alt}" unless options.sans_remove.include?(alt)
+    end
+  end
+  options.sans_append.each do |alt|
+    sans << "DNS:#{alt}"
+  end
+  exts << [ "subjectAltName", sans.join(','), false ]
 end
-exts << [ "subjectAltName", sans.join(','), false ]
 
 ef = OpenSSL::X509::ExtensionFactory.new
 exts = exts.collect { |e| ef.create_extension(*e) }
@@ -89,12 +124,6 @@ attrs = [
   OpenSSL::X509::Attribute.new("msExtReq", attrval)
 ]
 attrs.each { |attr| request.add_attribute(attr) }
-#attrval = OpenSSL::ASN1::Set([OpenSSL::ASN1::Sequence(@certificate.extensions)])
-#attrs = [
-#  OpenSSL::X509::Attribute.new("extReq", attrval),
-#  OpenSSL::X509::Attribute.new("msExtReq", attrval)
-#]
-#attrs.each { |attr| request.add_attribute(attr) }
 request.sign(key, OpenSSL::Digest::SHA1.new)
 
 csrfile = "#{options.outputdir}/#{options.certname}.csr"
