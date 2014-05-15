@@ -6,3 +6,4 @@
 *.swp
 *.int
 .ruby-version
+Gemfile.lock
