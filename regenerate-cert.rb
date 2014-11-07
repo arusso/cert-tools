@@ -60,6 +60,11 @@ def parse_options(args)
     ) { |remove|
       options.sans_remove.push(remove)
     }
+
+    opts.on("--replace-cn",
+            "Replace CN with the name specified by the -n flag") { |replace|
+      options.replace_cn = true
+    }
   end
 
   opt_parser.parse!(args)
@@ -93,9 +98,18 @@ else
   file.close
 end
 
+# modify the subject if we were passed the --replace-cn flag and the -n flag
+# is set.
+subject = OpenSSL::X509::Name.new(@certificate.subject)
+subject_a = subject.to_a.map do |itm|
+  itm[1] = options.certname if itm[0] == 'CN'
+  itm = itm
+end
+subject = OpenSSL::X509::Name.new(subject_a) if options.certname != 'unset' and options.replace_cn
+
 request = OpenSSL::X509::Request.new
 request.version = 0
-request.subject = @certificate.subject
+request.subject = subject
 request.public_key = key.public_key
 
 exts = [
