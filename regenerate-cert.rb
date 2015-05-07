@@ -1,4 +1,4 @@
-#!/bin/env ruby
+#!/usr/bin/env ruby
 
 require 'net/http'
 require 'openssl'
@@ -31,11 +31,11 @@ def parse_options(args)
 
     opts.on("-o", "--outputdir DIR", "Output Dir") do |o|
       raise(Errno::ENOENT, "Directory #{o} doesn't exist") unless File.directory?(o)
-      options.outputdir = o 
+      options.outputdir = o
     end
 
     opts.on("-p", "--port PORT", "Remote Port") do |p|
-      options.port = p 
+      options.port = p
     end
 
     opts.on("-n", "--certname CERTNAME", "Cert Name") { |n| options.certname = n }
