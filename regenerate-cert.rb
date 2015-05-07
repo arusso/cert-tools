@@ -7,6 +7,7 @@ require 'uri'
 require 'optparse'
 require 'ostruct'
 require 'resolv'
+require 'logger'
 
 def parse_options(args)
   options = OpenStruct.new
@@ -19,6 +20,7 @@ def parse_options(args)
   options.sans_auto = true
   options.sans_append = [ ]
   options.sans_remove = [ ]
+  options.logfile = 'cert-tools.log'
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage: regenerate-cert.rb [options]"
@@ -72,7 +74,26 @@ def parse_options(args)
   options
 end
 
+def read_key(keyfile)
+  file = File.open(keyfile,'r')
+  key = OpenSSL::PKey::RSA.new(file.read)
+  file.close
+  return key
+end
+
+def generate_key(keyfile)
+  key = OpenSSL::PKey::RSA.new 2048
+  file = File.new(keyfile,'w')
+  file.write(key)
+  file.close
+  return key
+end
+
+
 options = parse_options(ARGV)
+
+logger = Logger.new(options.logfile)
+logger.level = Logger::INFO
 
 https = Net::HTTP.new(options.server, options.port)
 https.use_ssl = true
@@ -86,16 +107,11 @@ options.certname = @certificate.subject.common_name if options.certname == 'unse
 
 keyfile = "#{options.outputdir}/#{options.certname}.key"
 if File.exist?(keyfile)
-  puts "key exists, reading existing key..."
-  file = File.open(keyfile,'r')
-  key = OpenSSL::PKey::RSA.new(file.read)
-  file.close
+  logger.info("key exists -- reading from #{keyfile}")
+  key = read_key keyfile
 else
-  puts "generating new key..."
-  key = OpenSSL::PKey::RSA.new 2048 unless File.exist?(keyfile)
-  file = File.new(keyfile,'w',0400)
-  file.write(key)
-  file.close
+  logger.info("key does not exists -- generating key in #{keyfile}")
+  key = generate_key keyfile 
 end
 
 # modify the subject if we were passed the --replace-cn flag and the -n flag
