@@ -83,7 +83,7 @@ end
 
 def generate_key(keyfile)
   key = OpenSSL::PKey::RSA.new 2048
-  file = File.new(keyfile,'w')
+  file = File.new(keyfile,'w',0400)
   file.write(key)
   file.close
   return key
