@@ -6,5 +6,6 @@
 *.swp
 *.int
 .ruby-version
+.rbenv-*
 Gemfile.lock
 *.log
