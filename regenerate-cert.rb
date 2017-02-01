@@ -21,6 +21,7 @@ def parse_options(args)
   options.sans_append = [ ]
   options.sans_remove = [ ]
   options.logfile = 'cert-tools.log'
+  options.keyfile = ''
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage: regenerate-cert.rb [options]"
@@ -67,6 +68,10 @@ def parse_options(args)
             "Replace CN with the name specified by the -n flag") { |replace|
       options.replace_cn = true
     }
+
+    opts.on("--private-key-file KEYFILE", "Use existing private key file") { |keyfile|
+      options.keyfile = keyfile
+    }
   end
 
   opt_parser.parse!(args)
@@ -105,7 +110,17 @@ https.start { |http| @certificate = https.peer_cert }
 
 options.certname = @certificate.subject.common_name if options.certname == 'unset'
 
-keyfile = "#{options.outputdir}/#{options.certname}.key"
+if options.keyfile != ""
+  if File.exist?(options.keyfile)
+    keyfile = options.keyfile
+  else
+    logger.error("specified keyfile does not exist -- #{options.keyfile}")
+    raise(Errno::ENOENT, "Specified private key #{options.keyfile} does not exist")
+  end
+else
+  keyfile = "#{options.outputdir}/#{options.certname}.key"
+end
+
 if File.exist?(keyfile)
   logger.info("key exists -- reading from #{keyfile}")
   key = read_key keyfile
