@@ -172,7 +172,7 @@ attrs.each { |attr| request.add_attribute(attr) }
 request.sign(key, OpenSSL::Digest::SHA1.new)
 
 csrfile = "#{options.outputdir}/#{options.certname}.csr"
-csrhfile = "#{options.outputdir}/#{options.certname}.csrh"
+txtfile = "#{options.outputdir}/#{options.certname}.txt"
 
 # get rid of the old csr file if it's around
 File.delete(csrfile) if File.exist?(csrfile)
@@ -181,7 +181,7 @@ file = File.new(csrfile, 'w',0400)
 file.write(request)
 file.close
 
-File.delete(csrhfile) if File.exist?(csrhfile)
-file = File.new(csrhfile, 'w',0400)
+File.delete(txtfile) if File.exist?(txtfile)
+file = File.new(txtfile, 'w',0400)
 file.write(request.to_text)
 file.close
