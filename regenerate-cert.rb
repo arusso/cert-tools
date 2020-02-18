@@ -169,6 +169,7 @@ exts = [
 
 if options.sans
   sans = [ ]
+  sans << "DNS:#{options.cn}"
   if options.sans_auto
     @certificate.sans.each do |alt|
       sans << "DNS:#{alt}" unless options.sans_remove.include?(alt)
