@@ -14,7 +14,12 @@ def parse_options(args)
 
   options.server = 'localhost'
   options.outputdir = Dir.pwd
-  options.certname = 'unset'
+  options.cn = ''
+  options.state = ''
+  options.country = ''
+  options.city = ''
+  options.org = ''
+  options.orgunit = ''
   options.port = '443'
   options.sans = true
   options.sans_auto = true
@@ -39,7 +44,14 @@ def parse_options(args)
       options.port = p
     end
 
-    opts.on("-n", "--certname CERTNAME", "Cert Name") { |n| options.certname = n }
+    opts.on("-n", "--cn CERTNAME", "Cert Name") { |n| options.cn = n }
+
+    opts.on("--email-address EMAIL", "Subject email address") { |n| options.emailaddress = n }
+    opts.on("--state STATE", "Subject state") { |n| options.state = n }
+    opts.on("--city CITY", "Subject city") { |n| options.city = n }
+    opts.on("--country COUNTRY", "Subject country") { |n| options.country = n }
+    opts.on("--org ORG", "Subject organization") { |n| options.org = n }
+    opts.on("--org-unit ORGUNIT", "Subject organization unit") { |n| options.orgunit = n }
 
     opts.on("--no-sans", "SANS") { |sans| options.sans = false }
 
@@ -64,9 +76,9 @@ def parse_options(args)
       options.sans_remove.push(remove)
     }
 
-    opts.on("--replace-cn",
-            "Replace CN with the name specified by the -n flag") { |replace|
-      options.replace_cn = true
+    opts.on("--update-subject",
+            "Update subject if any of the values are changed") { |replace|
+      options.update_subject = true
     }
 
     opts.on("--private-key-file KEYFILE", "Use existing private key file") { |keyfile|
@@ -75,7 +87,6 @@ def parse_options(args)
   end
 
   opt_parser.parse!(args)
-  #options.certname = options.server if options.certname == 'unset'
   options
 end
 
@@ -108,7 +119,7 @@ https.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 https.start { |http| @certificate = https.peer_cert }
 
-options.certname = @certificate.subject.common_name if options.certname == 'unset'
+options.cn = @certificate.subject.common_name if options.cn == ''
 
 if options.keyfile != ""
   if File.exist?(options.keyfile)
@@ -118,7 +129,7 @@ if options.keyfile != ""
     raise(Errno::ENOENT, "Specified private key #{options.keyfile} does not exist")
   end
 else
-  keyfile = "#{options.outputdir}/#{options.certname}.key"
+  keyfile = "#{options.outputdir}/#{options.cn}.key"
 end
 
 if File.exist?(keyfile)
@@ -126,17 +137,25 @@ if File.exist?(keyfile)
   key = read_key keyfile
 else
   logger.info("key does not exists -- generating key in #{keyfile}")
-  key = generate_key keyfile 
+  key = generate_key keyfile
 end
 
-# modify the subject if we were passed the --replace-cn flag and the -n flag
-# is set.
 subject = OpenSSL::X509::Name.new(@certificate.subject)
-subject_a = subject.to_a.map do |itm|
-  itm[1] = options.certname if itm[0] == 'CN'
-  itm = itm
+# update our subject if --update-subject is specified
+if options.update_subject
+  subject_a = subject.to_a.map do |itm|
+    itm[1] = options.cn if itm[0] == 'CN' and not options.cn.empty?
+    itm[1] = options.emailaddress if itm[0] == 'emailAddress' and not options.emailaddress.empty?
+    itm[1] = options.city if itm[0] == 'L' and not options.city.empty?
+    itm[1] = options.state if itm[0] == 'ST' and not options.state.empty?
+    itm[1] = options.country if itm[0] == 'C' and not options.country.empty?
+    itm[1] = options.org if itm[0] == 'O' and not options.org.empty?
+    itm[1] = options.orgunit if itm[0] == 'OU' and not options.orgunit.empty?
+    itm = itm
+  end
+  subject = OpenSSL::X509::Name.new(subject_a)
 end
-subject = OpenSSL::X509::Name.new(subject_a) if options.certname != 'unset' and options.replace_cn
+
 
 request = OpenSSL::X509::Request.new
 request.version = 0
@@ -171,8 +190,8 @@ attrs = [
 attrs.each { |attr| request.add_attribute(attr) }
 request.sign(key, OpenSSL::Digest::SHA1.new)
 
-csrfile = "#{options.outputdir}/#{options.certname}.csr"
-txtfile = "#{options.outputdir}/#{options.certname}.txt"
+csrfile = "#{options.outputdir}/#{options.cn}.csr"
+txtfile = "#{options.outputdir}/#{options.cn}.txt"
 
 # get rid of the old csr file if it's around
 File.delete(csrfile) if File.exist?(csrfile)
