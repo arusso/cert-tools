@@ -9,6 +9,8 @@ require 'ostruct'
 require 'resolv'
 require 'logger'
 
+VALID_KEY_SIZES = [ 2048, 4096, 8192 ]
+
 def parse_options(args)
   options = OpenStruct.new
 
@@ -27,6 +29,7 @@ def parse_options(args)
   options.sans_remove = [ ]
   options.logfile = 'cert-tools.log'
   options.keyfile = ''
+  options.keysize = 2048
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage: regenerate-cert.rb [options]"
@@ -54,6 +57,15 @@ def parse_options(args)
     opts.on("--org-unit ORGUNIT", "Subject organization unit") { |n| options.orgunit = n }
 
     opts.on("--no-sans", "SANS") { |sans| options.sans = false }
+
+    opts.on("--key-size SIZE", "Private Key size in bits for new keys.") do |size|
+      size = size.to_i
+      if not VALID_KEY_SIZES.include? size
+        raise "Unacceptable key size #{size} specified!"
+      end
+
+      options.keysize = size.to_i if VALID_KEY_SIZES.include? size.to_i
+    end
 
     opts.on(
       "--san SAN_NAME",
@@ -97,8 +109,8 @@ def read_key(keyfile)
   return key
 end
 
-def generate_key(keyfile)
-  key = OpenSSL::PKey::RSA.new 2048
+def generate_key(keyfile, size)
+  key = OpenSSL::PKey::RSA.new size
   file = File.new(keyfile,'w',0400)
   file.write(key)
   file.close
