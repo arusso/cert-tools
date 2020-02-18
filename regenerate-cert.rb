@@ -35,7 +35,7 @@ def parse_options(args)
       options.server = s
     end
 
-    opts.on("-o", "--outputdir DIR", "Output Dir") do |o|
+    opts.on("-o", "--output-dir DIR", "Output Dir") do |o|
       raise(Errno::ENOENT, "Directory #{o} doesn't exist") unless File.directory?(o)
       options.outputdir = o
     end
