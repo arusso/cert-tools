@@ -146,10 +146,10 @@ end
 
 if File.exist?(keyfile)
   logger.info("key exists -- reading from #{keyfile}")
-  key = read_key keyfile
+  key = read_key(keyfile)
 else
   logger.info("key does not exists -- generating key in #{keyfile}")
-  key = generate_key keyfile
+  key = generate_key(keyfile, options.keysize)
 end
 
 subject = OpenSSL::X509::Name.new(@certificate.subject)
