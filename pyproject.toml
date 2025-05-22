@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 check-cert-bundle = "check_cert_bundle:main"
+explode-certs = "explode_certs:main"
 
 [tool.uv]
 package = true
